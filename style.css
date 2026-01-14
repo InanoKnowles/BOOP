@@ -1,0 +1,28 @@
+.boardgame-playmatt {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr); 
+    grid-template-rows: repeat(6, 1fr);
+    height: 500px; 
+    width: 500px;
+    gap: 5px;
+    border: 1px solid black;
+}
+
+.playmatt-spot {
+    background-color: #f1f1f1;
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.playmatt-spot:hover {
+    box-shadow: 0 0 15px 5px rgba(0, 255, 255, 0.7);
+    transform: scale(1.05);
+    border-color: #00ffff;
+    z-index: 10;
+}
