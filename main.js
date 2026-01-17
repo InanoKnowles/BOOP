@@ -1,21 +1,14 @@
 const playmattSpots = document.querySelectorAll('.playmatt-spot');
 
-// 1. Prints the square that was clicked on to the console
-// 2. Replaces playmatt spot's number with P1: K
+let currentPlayer = "Player 1";
 
-function handlePlaymattSpotClicked(event) {
-    console.log("Player1 - Kitten,  playmatt-spot:", event.target.textContent);
-    this.textContent = 'P1: K';
-}
+const board = Array(36).fill(null);
 
-playmattSpots.forEach(item => {
-    item.addEventListener('click', handlePlaymattSpotClicked);
-});
+const felineTokens = {
+    "Player 1": { kittens: 8, cats: 0 },
+    "Player 2": { kittens: 8, cats: 0 }
+};
 
-// Win Conditions
-// Note: need to check if the combination is a kitten or a cat
-// If the combination is filled with 3 kittens they boop out of gameplay
-// 3 cats join the player's hand 
 
 const winOrGrowUpCondition =   
 [
@@ -100,3 +93,207 @@ const winOrGrowUpCondition =
     [22, 27, 32], 
     [23, 28, 33]
 ];
+
+function getPlayerToken(piece) {
+    const playerNumber = piece.owner === "Player 1" ? "1" : "2";
+    const pieceLetter = piece.type === "KITTEN" ? "K" : "C";
+    return playerNumber + pieceLetter;
+}
+
+function playerTurn() {
+    currentPlayer = (currentPlayer === "Player 1") ? "Player 2" : "Player 1";
+}
+
+function placePiece(index, clickedPlaymattSpot) {
+    if (board[index] !== null) {
+        return false;
+    }
+
+    let pieceTypeToPlace = null;
+
+    if (felineTokens[currentPlayer].kittens > 0) {
+        pieceTypeToPlace = "KITTEN";
+        felineTokens[currentPlayer].kittens -= 1;
+    } else if (felineTokens[currentPlayer].cats > 0) {
+        pieceTypeToPlace = "CAT";
+        felineTokens[currentPlayer].cats -= 1;
+    } else {
+        return false;
+    }
+
+    board[index] = { owner: currentPlayer, type: pieceTypeToPlace };
+    clickedPlaymattSpot.textContent = getPlayerToken(board[index]);
+
+    return true;
+}
+
+function handlePlaymattSpotClicked(event) {
+    const indexOfSpotClicked = Number(event.currentTarget.dataset.index);
+
+    console.log("Playmatt spot clicked on:", indexOfSpotClicked);
+
+    const isPlaced = placePiece(indexOfSpotClicked, event.currentTarget);
+
+    if (!isPlaced) return;
+
+    theBoopening(indexOfSpotClicked);
+
+    const result = checker();
+    if (result.type === "GROW") {
+    growUpKittens(result);
+}
+    console.log(result);
+
+    playerTurn();
+};
+
+function checker() {
+    for (const [firstIndex, secondIndex, thirdIndex] of winOrGrowUpCondition) {
+        const firstPiece = board[firstIndex];
+        const secondPiece = board[secondIndex];
+        const thirdPiece = board[thirdIndex];
+
+        if (firstPiece === null || secondPiece === null || thirdPiece === null) {
+            continue;
+        }
+
+        const sameOwner =
+            firstPiece.owner === secondPiece.owner &&
+            firstPiece.owner === thirdPiece.owner;
+
+        const allKittens =
+            firstPiece.type === "KITTEN" &&
+            secondPiece.type === "KITTEN" &&
+            thirdPiece.type === "KITTEN";
+
+        if (sameOwner && allKittens) {
+            return {
+                type: "GROW",
+                player: firstPiece.owner,
+                line: [firstIndex, secondIndex, thirdIndex]
+            };
+        }
+    }
+
+    return { type: "NONE" };
+}
+
+function growUpKittens(result) {
+    for (const index of result.line) {
+        board[index] = null;
+        playmattSpots[index].textContent = "";
+    }
+
+    felineTokens[result.player].cats = Math.min(8, felineTokens[result.player].cats + 3);
+
+    console.log(result.player, "cats now:", felineTokens[result.player].cats);
+}
+
+function indexToRow(index) {
+    return Math.floor(index / 6);
+}
+
+function indexToColumn(index) {
+    return index % 6;
+}
+
+function isInsideBoard(row, column) {
+    return row >= 0 && row < 6 && column >= 0 && column < 6;
+}
+
+function rowColToIndex(row, column) {
+    return row * 6 + column;
+}
+
+function getAdjacentIndices(index) {
+    const row = indexToRow(index);
+    const column = indexToColumn(index);
+
+    const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1],  [1, 0],  [1, 1],
+    ];
+
+    const adjacentIndices = [];
+
+    for (const [rowOffset, columnOffset] of directions) {
+        const newRow = row + rowOffset;
+        const newColumn = column + columnOffset;
+
+        if (isInsideBoard(newRow, newColumn)) {
+            adjacentIndices.push(rowColToIndex(newRow, newColumn));
+        }
+    }
+
+    return adjacentIndices;
+}
+
+function isLineOfTwoBlocking(placedIndex, rowDirection, columnDirection) {
+    const placedRow = indexToRow(placedIndex);
+    const placedColumn = indexToColumn(placedIndex);
+
+    const firstRow = placedRow + rowDirection;
+    const firstColumn = placedColumn + columnDirection;
+
+    const secondRow = placedRow + (rowDirection * 2);
+    const secondColumn = placedColumn + (columnDirection * 2);
+
+    if (!isInsideBoard(firstRow, firstColumn) || !isInsideBoard(secondRow, secondColumn)) {
+        return false;
+    }
+
+    const firstIndex = rowColToIndex(firstRow, firstColumn);
+    const secondIndex = rowColToIndex(secondRow, secondColumn);
+
+    return board[firstIndex] !== null && board[secondIndex] !== null;
+}
+
+function theBoopening(placedIndex) {
+    const adjacentIndices = getAdjacentIndices(placedIndex);
+
+    for (const adjacentIndex of adjacentIndices) {
+        if (board[adjacentIndex] === null) {
+            continue;
+        }
+
+        const placedRow = indexToRow(placedIndex);
+        const placedColumn = indexToColumn(placedIndex);
+
+        const adjacentRow = indexToRow(adjacentIndex);
+        const adjacentColumn = indexToColumn(adjacentIndex);
+
+        const rowDirection = adjacentRow - placedRow;
+        const columnDirection = adjacentColumn - placedColumn;
+
+        if (isLineOfTwoBlocking(placedIndex, rowDirection, columnDirection)) {
+            continue;
+        }
+
+        const targetRow = adjacentRow + rowDirection;
+        const targetColumn = adjacentColumn + columnDirection;
+
+        const movingPiece = board[adjacentIndex];
+
+        board[adjacentIndex] = null;
+        playmattSpots[adjacentIndex].textContent = "";
+
+        if (!isInsideBoard(targetRow, targetColumn)) {
+            continue;
+        }
+
+        const targetIndex = rowColToIndex(targetRow, targetColumn);
+
+        if (board[targetIndex] === null) {
+            board[targetIndex] = movingPiece;
+            playmattSpots[targetIndex].textContent = getPlayerToken(movingPiece);
+        } else {
+            board[adjacentIndex] = movingPiece;
+            playmattSpots[adjacentIndex].textContent = getPlayerToken(movingPiece);
+        }
+    }
+}
+
+playmattSpots.forEach(item => {
+    item.addEventListener('click', handlePlaymattSpotClicked); 
+});
