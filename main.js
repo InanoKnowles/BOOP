@@ -1,14 +1,14 @@
-const playmattSpots = document.querySelectorAll('.playmatt-spot');
-
 let currentPlayer = "Player 1";
-
+let selectedPieceType = "KITTEN";
+const playmattSpots = document.querySelectorAll('.playmatt-spot');
+const chooseKittenButton = document.querySelector("#choose-kitten");
+const chooseCatButton = document.querySelector("#choose-cat");
 const board = Array(36).fill(null);
 
 const felineTokens = {
     "Player 1": { kittens: 8, cats: 0 },
     "Player 2": { kittens: 8, cats: 0 }
 };
-
 
 const winOrGrowUpCondition =   
 [
@@ -98,11 +98,11 @@ function getPlayerToken(piece) {
     const playerNumber = piece.owner === "Player 1" ? "1" : "2";
     const pieceLetter = piece.type === "KITTEN" ? "K" : "C";
     return playerNumber + pieceLetter;
-}
+};
 
 function playerTurn() {
     currentPlayer = (currentPlayer === "Player 1") ? "Player 2" : "Player 1";
-}
+};
 
 function placePiece(index, clickedPlaymattSpot) {
     if (board[index] !== null) {
@@ -125,7 +125,7 @@ function placePiece(index, clickedPlaymattSpot) {
     clickedPlaymattSpot.textContent = getPlayerToken(board[index]);
 
     return true;
-}
+};
 
 function handlePlaymattSpotClicked(event) {
     const indexOfSpotClicked = Number(event.currentTarget.dataset.index);
@@ -176,7 +176,7 @@ function checker() {
     }
 
     return { type: "NONE" };
-}
+};
 
 function growUpKittens(result) {
     for (const index of result.line) {
@@ -187,23 +187,23 @@ function growUpKittens(result) {
     felineTokens[result.player].cats = Math.min(8, felineTokens[result.player].cats + 3);
 
     console.log(result.player, "cats now:", felineTokens[result.player].cats);
-}
+};
 
 function indexToRow(index) {
     return Math.floor(index / 6);
-}
+};
 
 function indexToColumn(index) {
     return index % 6;
-}
+};
 
 function isInsideBoard(row, column) {
     return row >= 0 && row < 6 && column >= 0 && column < 6;
-}
+};
 
 function rowColToIndex(row, column) {
     return row * 6 + column;
-}
+};
 
 function getAdjacentIndices(index) {
     const row = indexToRow(index);
@@ -227,7 +227,7 @@ function getAdjacentIndices(index) {
     }
 
     return adjacentIndices;
-}
+};
 
 function isLineOfTwoBlocking(placedIndex, rowDirection, columnDirection) {
     const placedRow = indexToRow(placedIndex);
@@ -247,7 +247,7 @@ function isLineOfTwoBlocking(placedIndex, rowDirection, columnDirection) {
     const secondIndex = rowColToIndex(secondRow, secondColumn);
 
     return board[firstIndex] !== null && board[secondIndex] !== null;
-}
+};
 
 function theBoopening(placedIndex) {
     const adjacentIndices = getAdjacentIndices(placedIndex);
@@ -292,7 +292,15 @@ function theBoopening(placedIndex) {
             playmattSpots[adjacentIndex].textContent = getPlayerToken(movingPiece);
         }
     }
-}
+};
+
+chooseKittenButton.addEventListener("click", () => {
+    selectedPieceType = "KITTEN";
+});
+
+chooseCatButton.addEventListener("click", () => {
+    selectedPieceType = "CAT";
+});
 
 playmattSpots.forEach(item => {
     item.addEventListener('click', handlePlaymattSpotClicked); 
